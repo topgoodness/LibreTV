@@ -1,35 +1,24 @@
-name: Bump version
+name: Sync Upstream
 
 on:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  bump-version:
-    if: github.repository == 'LibreSpark/LibreTV'
+  sync:
     runs-on: ubuntu-latest
-    env:
-      TZ: 'Asia/Shanghai'
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Bump version and commit changes
-      run: |
-        CURRENT_TIME=$(date +"%Y-%m-%d %H:%M")
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-        echo $(date +"%Y%m%d%H%M") > VERSION.txt
-        git add VERSION.txt
-        git commit -m "Auto Update $CURRENT_TIME"
-        git push origin main
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        repository: ${{ github.repository }}
-        retain_days: 0
-        keep_minimum_runs: 2
+      - name: Add upstream
+        run: |
+          git remote add upstream https://github.com/LibreSpark/LibreTV.git
+          git fetch upstream
+          git merge upstream/main --allow-unrelated-histories -m "🔄 Sync from upstream"
+          git push origin main
